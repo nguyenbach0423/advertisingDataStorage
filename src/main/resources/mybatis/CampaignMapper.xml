@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="dev.mapper.CampaignMapper">
+    <insert id="insertCampaign" parameterType="Campaign">
+        INSERT INTO CAMPAIGN (CampaignID, CampaignName, CampaignStatus, StartDate, EndDate, Budget) VALUES (#{CampaignID}, #{CampaignName}, #{CampaignStatus}, #{StartDate}, #{EndDate}, #{Budget});
+    </insert>
+</mapper>
