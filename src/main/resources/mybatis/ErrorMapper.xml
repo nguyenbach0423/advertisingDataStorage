@@ -5,4 +5,15 @@
     <insert id="insertError" parameterType="Error">
         INSERT INTO ERROR (SheetName, HeaderName, RowNumber, ErrorMessage) VALUES (#{SheetName}, #{HeaderName}, #{RowNumber}, #{ErrorMessage});
     </insert>
+    <select id="selectAllError" resultMap="result">
+        SELECT * FROM ERROR;
+    </select>
+
+    <resultMap id="result" type="Error">
+        <result property="ErrorID" column="ErrorID"/>
+        <result property="SheetName" column="SheetName"/>
+        <result property="HeaderName" column="HeaderName"/>
+        <result property="RowNumber" column="RowNumber"/>
+        <result property="ErrorMessage" column="ErrorMessage"/>
+    </resultMap>
 </mapper>

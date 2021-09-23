@@ -9,8 +9,7 @@ public class Error {
 
     public Error () {}
 
-    public Error (String SheetName, String HeaderName, int RowNumber, String ErrorMessage)
-    {
+    public Error (String SheetName, String HeaderName, int RowNumber, String ErrorMessage) {
         super();
         this.SheetName = SheetName;
         this.HeaderName = HeaderName;

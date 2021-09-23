@@ -2,62 +2,88 @@ package dev.controller;
 
 import dev.message.ResponseMessage;
 import dev.service.ExcelService;
+import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.*;
+import java.util.ArrayList;
 
 @Controller
-@RequestMapping("/api/excel")
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class ExcelController {
     @Autowired
     ExcelService excelService;
 
     @PostMapping("/upload")
-    public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) throws IOException {
-        String message = "";
-        if(file.isEmpty())
-        {
-            message = "No file chosen.";
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-        }
-        if (file.getOriginalFilename().length() > 250)
-        {
-            message = "File name too large.";
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-        }
-        if (!file.getOriginalFilename().endsWith(".xlsx"))
-        {
-            message = "File name must have extension '.xlsx'.";
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-        }
+    public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
+        excelService.clearErrorData();
 
-        if (file.getSize() > 10 * 1024 * 1024)
-        {
-            message = "File too large.";
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-        }
+        String message = "";
 
         if (file.getSize() <= 5 * 1024 * 1024) {
-            int statusUpload = excelService.saveData(file);
+            String messageResponse = excelService.saveData(file);
 
-            if (statusUpload == 1) {
+            if (messageResponse.equals("")) {
                 message = "Uploaded the file successfully:" + file.getOriginalFilename();
                 return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
             } else {
-                message = "Uploaded the file fail.";
+                message = messageResponse;
                 return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
             }
         }
         else {
-            message = "Uploaded the file fail.";
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
+            String messageResponse = excelService.saveDataStreaming(file);
+
+            if (messageResponse.equals("")) {
+                message = "Uploaded the file successfully:" + file.getOriginalFilename();
+                return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
+            } else {
+                message = messageResponse;
+                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
+            }
+        }
+    }
+
+    @GetMapping("/")
+    public ResponseEntity<ArrayList<String>> loadErrorFile () {
+        File folder = new File("src/main/resources/errorFiles");
+        File[] files = folder.listFiles();
+        ArrayList<String> fileNames = new ArrayList<>();
+        for (File file : files) {
+            fileNames.add(file.getName());
+        }
+        return ResponseEntity.ok().body(fileNames);
+    }
+
+    @GetMapping("/download/{fileName}")
+    public ResponseEntity<Resource> downloadErrorFile (@PathVariable String fileName) {
+        try {
+            File file = new File("src/main/resources/errorFiles/" + fileName);
+            FileInputStream fileInputStream = new FileInputStream(file);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            IOUtils.copy(fileInputStream, outputStream);
+
+            InputStreamResource resource = new InputStreamResource(new ByteArrayInputStream(outputStream.toByteArray()));
+
+            fileInputStream.close();
+            file.delete();
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+        } catch (IOException e)
+        {
+            throw new RuntimeException(e);
         }
     }
 }
