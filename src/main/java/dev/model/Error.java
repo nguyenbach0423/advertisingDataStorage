@@ -1,7 +1,6 @@
 package dev.model;
 
 public class Error {
-    private long ErrorID;
     private String SheetName;
     private String HeaderName;
     private int RowNumber;
@@ -15,14 +14,6 @@ public class Error {
         this.HeaderName = HeaderName;
         this.RowNumber = RowNumber;
         this.ErrorMessage = ErrorMessage;
-    }
-
-    public long getErrorID() {
-        return ErrorID;
-    }
-
-    public void setErrorID(long errorID) {
-        ErrorID = errorID;
     }
 
     public String getSheetName() {

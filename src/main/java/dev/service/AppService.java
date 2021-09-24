@@ -8,9 +8,6 @@ import dev.mapper.CampaignMapper;
 import dev.model.Ad;
 import dev.model.Campaign;
 import dev.model.Error;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -19,7 +16,6 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
@@ -30,21 +26,18 @@ import java.util.ArrayList;
 import java.util.Date;
 
 @Service
-public class ExcelService {
+public class AppService {
+    private int MAX_NUM_OF_RECORDS = 500;
+
     @Autowired
     CampaignMapper campaignMapper;
     @Autowired
     AdMapper adMapper;
 
-    private ArrayList<Error> errors = new ArrayList<>();
-
-    public void clearErrorData () {
-        errors.clear();
-    }
-
     public String saveData (MultipartFile file) {
         ArrayList<Campaign> campaigns = new ArrayList<>();
         ArrayList<Ad> ads = new ArrayList<>();
+        ArrayList<Error> errors = new ArrayList<>();
 
         ExcelHelper excelHelper = new ExcelHelper();
 
@@ -78,15 +71,10 @@ public class ExcelService {
             });
 
             if (errors.isEmpty()) {
-                campaigns.forEach((data) -> {
-                    campaignMapper.insertCampaign(data);
-                });
-                ads.forEach((data) -> {
-                    adMapper.insertAd(data);
-                });
+                insertDataToDB(campaigns, ads);
                 return "";
             } else {
-                String errorsFileName = createErrorsFile();
+                String errorsFileName = createErrorsFile(errors);
                 return errorsFileName;
             }
         } catch (IOException e)
@@ -98,6 +86,7 @@ public class ExcelService {
     public String saveDataStreaming (MultipartFile file) {
         ArrayList<Campaign> campaigns = new ArrayList<>();
         ArrayList<Ad> ads = new ArrayList<>();
+        ArrayList<Error> errors = new ArrayList<>();
 
         ExcelHelper excelHelper = new ExcelHelper();
         try {
@@ -130,15 +119,10 @@ public class ExcelService {
             });
 
             if (errors.isEmpty()) {
-                campaigns.forEach((data) -> {
-                    campaignMapper.insertCampaign(data);
-                });
-                ads.forEach((data) -> {
-                    adMapper.insertAd(data);
-                });
+                insertDataToDB(campaigns, ads);
                 return "";
             } else {
-                String errorsFileName = createErrorsFile();
+                String errorsFileName = createErrorsFile(errors);
                 return errorsFileName;
             }
         } catch (IOException e)
@@ -147,7 +131,22 @@ public class ExcelService {
         }
     }
 
-    private String createErrorsFile () {
+    private void insertDataToDB (ArrayList<Campaign> campaigns, ArrayList<Ad> ads) {
+        long startTime = System.currentTimeMillis();
+        int campaignSize = campaigns.size();
+        for (int i = 0; i < campaignSize; i += MAX_NUM_OF_RECORDS){
+            campaignMapper.insertMultiCampaign(campaigns.subList(i, Math.min(campaignSize, i + MAX_NUM_OF_RECORDS)));
+        }
+
+        int adSize = ads.size();
+        for (int i = 0; i < adSize; i += MAX_NUM_OF_RECORDS){
+            adMapper.insertMultiAd(ads.subList(i, Math.min(adSize, i + MAX_NUM_OF_RECORDS)));
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println (endTime - startTime + "ms");
+    }
+
+    private String createErrorsFile (ArrayList<Error> errors) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         XSSFSheet sheet = workbook.createSheet("Error");
 

@@ -2,7 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="dev.mapper.CampaignMapper">
-    <insert id="insertCampaign" parameterType="Campaign">
-        INSERT INTO CAMPAIGN (CampaignID, CampaignName, CampaignStatus, StartDate, EndDate, Budget) VALUES (#{CampaignID}, #{CampaignName}, #{CampaignStatus}, #{StartDate}, #{EndDate}, #{Budget});
+    <insert id="insertMultiCampaign">
+        INSERT INTO CAMPAIGN (CampaignID, CampaignName, CampaignStatus, StartDate, EndDate, Budget) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.CampaignID}, #{item.CampaignName}, #{item.CampaignStatus}, #{item.StartDate}, #{item.EndDate}, #{item.Budget})
+        </foreach>
     </insert>
 </mapper>

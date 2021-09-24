@@ -2,7 +2,10 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="dev.mapper.AdMapper">
-    <insert id="insertAd" parameterType="Ad">
-        INSERT INTO AD (AdID, AdName, AdStatus, AdType, BidModifier) VALUES (#{AdID}, #{AdName}, #{AdStatus}, #{AdType}, #{BidModifier});
+    <insert id="insertMultiAd">
+        INSERT INTO AD (AdID, AdName, AdStatus, AdType, BidModifier) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.AdID}, #{item.AdName}, #{item.AdStatus}, #{item.AdType}, #{item.BidModifier})
+        </foreach>
     </insert>
 </mapper>

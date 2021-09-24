@@ -1,7 +1,7 @@
 package dev.controller;
 
 import dev.message.ResponseMessage;
-import dev.service.ExcelService;
+import dev.service.AppService;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -19,18 +19,16 @@ import java.util.ArrayList;
 
 @Controller
 @CrossOrigin(origins = "*", allowedHeaders = "*")
-public class ExcelController {
+public class AppController {
     @Autowired
-    ExcelService excelService;
+    AppService appService;
 
     @PostMapping("/upload")
     public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
-        excelService.clearErrorData();
-
         String message = "";
 
         if (file.getSize() <= 5 * 1024 * 1024) {
-            String messageResponse = excelService.saveData(file);
+            String messageResponse = appService.saveData(file);
 
             if (messageResponse.equals("")) {
                 message = "Uploaded the file successfully:" + file.getOriginalFilename();
@@ -41,7 +39,7 @@ public class ExcelController {
             }
         }
         else {
-            String messageResponse = excelService.saveDataStreaming(file);
+            String messageResponse = appService.saveDataStreaming(file);
 
             if (messageResponse.equals("")) {
                 message = "Uploaded the file successfully:" + file.getOriginalFilename();

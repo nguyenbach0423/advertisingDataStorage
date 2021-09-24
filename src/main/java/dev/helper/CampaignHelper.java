@@ -8,14 +8,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class CampaignHelper {
-    private ArrayList<Error> errors = new ArrayList<>();
-
+public class CampaignHelper extends ObjectHelper{
     public CampaignHelper() {}
-
-    public ArrayList<Error> getErrors() {
-        return errors;
-    }
 
     public ArrayList<Campaign> getCampaignData (Sheet sheet) {
         ArrayList<Campaign> campaigns = new ArrayList<>();
@@ -59,6 +53,53 @@ public class CampaignHelper {
                 }
             }
         }
+        return campaigns;
+    }
+
+    public ArrayList<Campaign> getCampaignDataStreaming (Sheet sheet) {
+        ArrayList<Campaign> campaigns = new ArrayList<>();
+
+        Field[] fields = Campaign.class.getDeclaredFields();
+
+        ArrayList<String> columnNameList = new ArrayList<>();
+        for (Row row : sheet)
+        {
+            for (Cell cell : row)
+            {
+                columnNameList.add(cell.getStringCellValue());
+            }
+            break;
+        }
+
+        int errorExists = validateHeader(fields, columnNameList, sheet.getSheetName());
+        if (errorExists == 0) {
+            int[] indexes = getIndex(fields, columnNameList);
+            int rowNum = 1;
+            for (Row row : sheet) {
+                int cellNum = 0;
+                int errorNum = 0;
+                Campaign campaign = new Campaign();
+                for (Cell cell : row) {
+                    String errorMessage = validateCampaignData(campaign, cell, indexes[cellNum]);
+                    if (!errorMessage.equals("")) {
+                        errorNum++;
+                        Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
+                        errors.add(error);
+                    }
+                    cellNum++;
+                }
+                if (errorNum == 0 && campaign.getStartDate().compareTo(campaign.getEndDate()) >= 0) {
+                    errorNum++;
+                    Error error = new Error(sheet.getSheetName(), "End Date", rowNum + 1, "Mustn't be before Start Date.");
+                    errors.add(error);
+                }
+                if (errorNum == 0) {
+                    campaigns.add(campaign);
+                }
+                rowNum++;
+            }
+        }
+
         return campaigns;
     }
 
@@ -154,103 +195,5 @@ public class CampaignHelper {
         }
 
         return errorMessage;
-    }
-
-    public ArrayList<Campaign> getCampaignDataStreaming (Sheet sheet) {
-        ArrayList<Campaign> campaigns = new ArrayList<>();
-
-        Field[] fields = Campaign.class.getDeclaredFields();
-
-        ArrayList<String> columnNameList = new ArrayList<>();
-        for (Row row : sheet)
-        {
-            for (Cell cell : row)
-            {
-                columnNameList.add(cell.getStringCellValue());
-            }
-            break;
-        }
-
-        int errorExists = validateHeader(fields, columnNameList, sheet.getSheetName());
-        if (errorExists == 0) {
-            int[] indexes = getIndex(fields, columnNameList);
-            int rowNum = 1;
-            for (Row row : sheet) {
-                int cellNum = 0;
-                int errorNum = 0;
-                Campaign campaign = new Campaign();
-                for (Cell cell : row) {
-                    String errorMessage = validateCampaignData(campaign, cell, indexes[cellNum]);
-                    if (!errorMessage.equals("")) {
-                        errorNum++;
-                        Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
-                        errors.add(error);
-                    }
-                    cellNum++;
-                }
-                if (errorNum == 0 && campaign.getStartDate().compareTo(campaign.getEndDate()) >= 0) {
-                    errorNum++;
-                    Error error = new Error(sheet.getSheetName(), "End Date", rowNum + 1, "Mustn't be before Start Date.");
-                    errors.add(error);
-                }
-                if (errorNum == 0) {
-                    campaigns.add(campaign);
-                }
-                rowNum++;
-            }
-        }
-
-        return campaigns;
-    }
-
-    private int validateHeader (Field[] fields, ArrayList<String> columnNameList, String sheetName) {
-        int errorExists = 0;
-        for (String columnName : columnNameList)
-        {
-            int columnNameExists = 0;
-            String columnNameDuplicate = columnName.replaceAll("\\s", "");
-            columnNameDuplicate = columnNameDuplicate.toLowerCase();
-            for (Field field : fields)
-            {
-                String fieldName = field.getName().toLowerCase();
-                if (columnNameDuplicate.equals(fieldName)) {
-                    columnNameExists = 1;
-                    break;
-                }
-            }
-            if (columnNameExists == 1)
-            {
-                continue;
-            }
-            else {
-                errorExists = 1;
-                Error error = new Error();
-                error.setSheetName(sheetName);
-                error.setHeaderName(columnName);
-                error.setErrorMessage("Header Name invalid.");
-                errors.add(error);
-            }
-        }
-        return errorExists;
-    }
-
-    private int[] getIndex (Field[] fields, ArrayList<String> columnNameList) {
-        int cells = columnNameList.size();
-        int[] indexes = new int[cells];
-
-        for (int i = 0; i < cells; i++)
-        {
-            String columnName = columnNameList.get(i);
-            columnName = columnName.replaceAll("\\s", "");
-            for (int j = 0; j < fields.length; j++)
-            {
-                if (columnName.toLowerCase().equals(fields[j].getName().toLowerCase()))
-                {
-                    indexes[i] = j;
-                    break;
-                }
-            }
-        }
-        return indexes;
     }
 }
