@@ -12,8 +12,8 @@ public abstract class ObjectHelper {
         return errors;
     }
 
-    int validateHeader(Field[] fields, ArrayList<String> columnNameList, String sheetName) {
-        int errorExists = 0;
+    protected boolean isErrorHeader(Field[] fields, ArrayList<String> columnNameList, String sheetName) {
+        boolean errorExists = false;
         for (String columnName : columnNameList)
         {
             int columnNameExists = 0;
@@ -32,7 +32,7 @@ public abstract class ObjectHelper {
                 continue;
             }
             else {
-                errorExists = 1;
+                errorExists = true;
                 Error error = new Error();
                 error.setSheetName(sheetName);
                 error.setHeaderName(columnName);
@@ -43,7 +43,7 @@ public abstract class ObjectHelper {
         return errorExists;
     }
 
-    int[] getIndex(Field[] fields, ArrayList<String> columnNameList) {
+    protected int[] getIndex(Field[] fields, ArrayList<String> columnNameList) {
         int cells = columnNameList.size();
         int[] indexes = new int[cells];
 

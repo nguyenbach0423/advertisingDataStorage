@@ -23,8 +23,8 @@ public class CampaignHelper extends ObjectHelper{
             columnNameList.add(cell.getStringCellValue());
         }
 
-        int errorExists = validateHeader(fields, columnNameList, sheet.getSheetName());
-        if (errorExists == 0) {
+        boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
+        if (errorHeaderExists == false) {
             int[] indexes = getIndex(fields, columnNameList);
 
             int rows = sheet.getLastRowNum();
@@ -71,8 +71,8 @@ public class CampaignHelper extends ObjectHelper{
             break;
         }
 
-        int errorExists = validateHeader(fields, columnNameList, sheet.getSheetName());
-        if (errorExists == 0) {
+        boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
+        if (errorHeaderExists == false) {
             int[] indexes = getIndex(fields, columnNameList);
             int rowNum = 1;
             for (Row row : sheet) {
