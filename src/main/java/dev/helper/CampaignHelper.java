@@ -9,54 +9,12 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class CampaignHelper extends ObjectHelper{
+    private int API_TYPE_1 = 1;
+
     public CampaignHelper() {}
 
-    public ArrayList<Campaign> getCampaignData (Sheet sheet) {
-        ArrayList<Campaign> campaigns = new ArrayList<>();
+    public ArrayList<Campaign> getCampaignData (Sheet sheet, int api_type) {
 
-        Field[] fields = Campaign.class.getDeclaredFields();
-
-        ArrayList<String> columnNameList = new ArrayList<>();
-        Row header = sheet.getRow(0);
-        for (Cell cell : header)
-        {
-            columnNameList.add(cell.getStringCellValue());
-        }
-
-        boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
-        if (errorHeaderExists == false) {
-            int[] indexes = getIndex(fields, columnNameList);
-
-            int rows = sheet.getLastRowNum();
-            int cells = sheet.getRow(0).getLastCellNum();
-
-            for (int i = 1; i <= rows; i++) {
-                int errorNum = 0;
-                Campaign campaign = new Campaign();
-                Row row = sheet.getRow(i);
-                for (int j = 0; j < cells; j++) {
-                    Cell cell = row.getCell(j);
-                    String errorMessage = validateCampaignData(campaign, cell, indexes[j]);
-                    if (!errorMessage.equals("")) {
-                        errorNum++;
-                        Error error = new Error(sheet.getSheetName(), sheet.getRow(0).getCell(j).getStringCellValue(), i + 1, errorMessage);
-                        errors.add(error);
-                    }
-                }
-                if (errorNum == 0 && campaign.getStartDate().compareTo(campaign.getEndDate()) >= 0) {
-                    errorNum++;
-                    Error error = new Error(sheet.getSheetName(), "End Date", i + 1, "Mustn't be before Start Date.");
-                    errors.add(error);
-                }
-                if (errorNum == 0) {
-                    campaigns.add(campaign);
-                }
-            }
-        }
-        return campaigns;
-    }
-
-    public ArrayList<Campaign> getCampaignDataStreaming (Sheet sheet) {
         ArrayList<Campaign> campaigns = new ArrayList<>();
 
         Field[] fields = Campaign.class.getDeclaredFields();
@@ -71,32 +29,43 @@ public class CampaignHelper extends ObjectHelper{
             break;
         }
 
+        boolean isFirstRowChanged = true;
+        if (api_type == API_TYPE_1) {
+            isFirstRowChanged = false;
+        }
+
         boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
         if (errorHeaderExists == false) {
             int[] indexes = getIndex(fields, columnNameList);
             int rowNum = 1;
             for (Row row : sheet) {
-                int cellNum = 0;
-                int errorNum = 0;
-                Campaign campaign = new Campaign();
-                for (Cell cell : row) {
-                    String errorMessage = validateCampaignData(campaign, cell, indexes[cellNum]);
-                    if (!errorMessage.equals("")) {
+                if (isFirstRowChanged == false) {
+                    isFirstRowChanged = true;
+                    continue;
+                }
+                else {
+                    int cellNum = 0;
+                    int errorNum = 0;
+                    Campaign campaign = new Campaign();
+                    for (Cell cell : row) {
+                        String errorMessage = validateCampaignData(campaign, cell, indexes[cellNum]);
+                        if (!errorMessage.equals("")) {
+                            errorNum++;
+                            Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
+                            errors.add(error);
+                        }
+                        cellNum++;
+                    }
+                    if (errorNum == 0 && campaign.getStartDate().compareTo(campaign.getEndDate()) >= 0) {
                         errorNum++;
-                        Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
+                        Error error = new Error(sheet.getSheetName(), "End Date", rowNum + 1, "Mustn't be before Start Date.");
                         errors.add(error);
                     }
-                    cellNum++;
+                    if (errorNum == 0) {
+                        campaigns.add(campaign);
+                    }
+                    rowNum++;
                 }
-                if (errorNum == 0 && campaign.getStartDate().compareTo(campaign.getEndDate()) >= 0) {
-                    errorNum++;
-                    Error error = new Error(sheet.getSheetName(), "End Date", rowNum + 1, "Mustn't be before Start Date.");
-                    errors.add(error);
-                }
-                if (errorNum == 0) {
-                    campaigns.add(campaign);
-                }
-                rowNum++;
             }
         }
 

@@ -18,6 +18,11 @@ import java.util.ArrayList;
 
 @Service (value = "AppService")
 public class AppServiceImpl implements AppService{
+    private double SIZE_FILE = 5 * 1024 * 1024;
+    private int MAX_NUM_OF_RECORDS = 500;
+    private String CAMPAIGN_SHEET_NAME = "Campaign";
+    private String AD_SHEET_NAME = "Ad";
+    private int[] API_TYPE = {1, 2};
 
     @Autowired
     CampaignMapper campaignMapper;
@@ -32,61 +37,23 @@ public class AppServiceImpl implements AppService{
         ExcelHelper excelHelper = new ExcelHelper();
 
         try {
-            ArrayList<Sheet> sheets = excelHelper.readExcelFile(file.getInputStream());
-
-            sheets.forEach((sheet) -> {
-                String sheetName = sheet.getSheetName();
-                if (sheetName.equals(CAMPAIGN_SHEET_NAME)) {
-                    CampaignHelper campaignHelper = new CampaignHelper();
-                    ArrayList<Campaign> campaignArrayList = campaignHelper.getCampaignData(sheet);
-                    errors.addAll(campaignHelper.getErrors());
-                    if (errors.isEmpty()) {
-                        campaigns.addAll(campaignArrayList);
-                    }
-                }
-                else if (sheetName.equals(AD_SHEET_NAME)) {
-                    AdHelper adHelper = new AdHelper();
-                    ArrayList<Ad> adArrayList = adHelper.getAdData(sheet);
-                    errors.addAll(adHelper.getErrors());
-                    if (errors.isEmpty()) {
-                        ads.addAll(adArrayList);
-                    }
-                }
-                else
-                {
-                    Error error = getErrorSheetName(sheetName);
-                    errors.add(error);
-                }
-            });
-
-            if (errors.isEmpty()) {
-                insertDataToDB(campaigns, ads);
-                return "";
+            ArrayList<Sheet> sheets;
+            int api_type;
+            if (file.getSize() <= SIZE_FILE) {
+                sheets = excelHelper.readExcelFile(file.getInputStream());
+                api_type = API_TYPE[0];
+                System.out.println("AP1 running...");
             } else {
-                String errorsFileName = excelHelper.createErrorsFile(errors);
-                return errorsFileName;
+                sheets = excelHelper.readExcelFileStreaming(file.getInputStream());
+                api_type = API_TYPE[1];
+                System.out.println("AP2 running...");
             }
-        } catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public String excelToDBStreaming (MultipartFile file) {
-        ArrayList<Campaign> campaigns = new ArrayList<>();
-        ArrayList<Ad> ads = new ArrayList<>();
-        ArrayList<Error> errors = new ArrayList<>();
-
-        ExcelHelper excelHelper = new ExcelHelper();
-
-        try {
-            ArrayList<Sheet> sheets = excelHelper.readExcelFileStreaming(file.getInputStream());
 
             sheets.forEach((sheet) -> {
                 String sheetName = sheet.getSheetName();
                 if (sheetName.equals(CAMPAIGN_SHEET_NAME)) {
                     CampaignHelper campaignHelper = new CampaignHelper();
-                    ArrayList<Campaign> campaignArrayList = campaignHelper.getCampaignDataStreaming(sheet);
+                    ArrayList<Campaign> campaignArrayList = campaignHelper.getCampaignData(sheet, api_type);
                     errors.addAll(campaignHelper.getErrors());
                     if (errors.isEmpty()) {
                         campaigns.addAll(campaignArrayList);
@@ -94,7 +61,7 @@ public class AppServiceImpl implements AppService{
                 }
                 else if (sheetName.equals(AD_SHEET_NAME)) {
                     AdHelper adHelper = new AdHelper();
-                    ArrayList<Ad> adArrayList = adHelper.getAdDataStreaming(sheet);
+                    ArrayList<Ad> adArrayList = adHelper.getAdData(sheet, api_type);
                     errors.addAll(adHelper.getErrors());
                     if (errors.isEmpty()) {
                         ads.addAll(adArrayList);

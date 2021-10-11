@@ -20,8 +20,6 @@ import java.util.ArrayList;
 @Controller
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AppController {
-    private double SIZE_FILE = 5 * 1024 * 1024;
-
     @Autowired
     AppService appService;
 
@@ -29,27 +27,14 @@ public class AppController {
     public ResponseEntity<ResponseMessage> uploadFile(@RequestParam("file") MultipartFile file) {
         String message = "";
 
-        if (file.getSize() <= SIZE_FILE) {
-            String messageResponse = appService.excelToDB(file);
+        String messageResponse = appService.excelToDB(file);
 
-            if (messageResponse.equals("")) {
-                message = "Uploaded the file successfully:" + file.getOriginalFilename();
-                return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
-            } else {
-                message = messageResponse;
-                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-            }
-        }
-        else {
-            String messageResponse = appService.excelToDBStreaming(file);
-
-            if (messageResponse.equals("")) {
-                message = "Uploaded the file successfully:" + file.getOriginalFilename();
-                return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
-            } else {
-                message = messageResponse;
-                return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
-            }
+        if (messageResponse.equals("")) {
+            message = "Uploaded the file successfully:" + file.getOriginalFilename();
+            return ResponseEntity.status(HttpStatus.OK).body(new ResponseMessage(message));
+        } else {
+            message = messageResponse;
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(new ResponseMessage(message));
         }
     }
 

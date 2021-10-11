@@ -8,49 +8,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 public class AdHelper extends ObjectHelper{
+    private int API_TYPE_1 = 1;
+
     public AdHelper() {}
 
-    public ArrayList<Ad> getAdData (Sheet sheet) {
-        ArrayList<Ad> ads = new ArrayList<>();
-
-        Field[] fields = Ad.class.getDeclaredFields();
-
-        ArrayList<String> columnNameList = new ArrayList<>();
-        Row header = sheet.getRow(0);
-        for (Cell cell : header)
-        {
-            columnNameList.add(cell.getStringCellValue());
-        }
-
-        boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
-        if (errorHeaderExists == false) {
-            int[] indexes = getIndex(fields, columnNameList);
-
-            int rows = sheet.getLastRowNum();
-            int cells = sheet.getRow(0).getLastCellNum();
-
-            for (int i = 1; i <= rows; i++) {
-                int errorNum = 0;
-                Ad ad = new Ad();
-                Row row = sheet.getRow(i);
-                for (int j = 0; j < cells; j++) {
-                    Cell cell = row.getCell(j);
-                    String errorMessage = validateAdData(ad, cell, indexes[j]);
-                    if (!errorMessage.equals("")) {
-                        errorNum++;
-                        Error error = new Error(sheet.getSheetName(), sheet.getRow(0).getCell(j).getStringCellValue(), i + 1, errorMessage);
-                        errors.add(error);
-                    }
-                }
-                if (errorNum == 0) {
-                    ads.add(ad);
-                }
-            }
-        }
-        return ads;
-    }
-
-    public ArrayList<Ad> getAdDataStreaming (Sheet sheet) {
+    public ArrayList<Ad> getAdData (Sheet sheet, int api_type) {
         ArrayList<Ad> ads = new ArrayList<>();
 
         Field[] fields = Ad.class.getDeclaredFields();
@@ -65,27 +27,38 @@ public class AdHelper extends ObjectHelper{
             break;
         }
 
+        boolean isFirstRowChanged = true;
+        if (api_type == API_TYPE_1) {
+            isFirstRowChanged = false;
+        }
+
         boolean errorHeaderExists = isErrorHeader(fields, columnNameList, sheet.getSheetName());
         if (errorHeaderExists == false) {
             int[] indexes = getIndex(fields, columnNameList);
             int rowNum = 1;
             for (Row row : sheet) {
-                int cellNum = 0;
-                int errorNum = 0;
-                Ad ad = new Ad();
-                for (Cell cell : row) {
-                    String errorMessage = validateAdData(ad, cell, indexes[cellNum]);
-                    if (!errorMessage.equals("")) {
-                        errorNum++;
-                        Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
-                        errors.add(error);
+                if (isFirstRowChanged == false) {
+                    isFirstRowChanged = true;
+                    continue;
+                }
+                else {
+                    int cellNum = 0;
+                    int errorNum = 0;
+                    Ad ad = new Ad();
+                    for (Cell cell : row) {
+                        String errorMessage = validateAdData(ad, cell, indexes[cellNum]);
+                        if (!errorMessage.equals("")) {
+                            errorNum++;
+                            Error error = new Error(sheet.getSheetName(), columnNameList.get(cellNum), rowNum + 1, errorMessage);
+                            errors.add(error);
+                        }
+                        cellNum++;
                     }
-                    cellNum++;
+                    if (errorNum == 0) {
+                        ads.add(ad);
+                    }
+                    rowNum++;
                 }
-                if (errorNum == 0) {
-                    ads.add(ad);
-                }
-                rowNum++;
             }
         }
 
